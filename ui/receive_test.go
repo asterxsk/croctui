@@ -21,3 +21,45 @@ func TestReceiveCodeTooShort(t *testing.T) {
 		t.Fatal("expected a status error message")
 	}
 }
+
+func TestReceiveErrorPrecedence(t *testing.T) {
+	m := newReceiveModel("croc")
+	// Simulate an error state with both err and status set
+	m.state = recvError
+	m.err = &testError{"croc subprocess failed"}
+	m.status = "connection timeout"
+
+	// View should show both with status first
+	view := m.View()
+	if view == "" {
+		t.Fatal("expected non-empty view")
+	}
+	// Should contain both messages
+	if !contains(view, "connection timeout") {
+		t.Errorf("expected status 'connection timeout' in view, got %q", view)
+	}
+	if !contains(view, "croc subprocess failed") {
+		t.Errorf("expected err 'croc subprocess failed' in view, got %q", view)
+	}
+}
+
+type testError struct {
+	msg string
+}
+
+func (e *testError) Error() string {
+	return e.msg
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && (s == substr || len(s) > len(substr) && findSubstring(s, substr))
+}
+
+func findSubstring(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
+}
