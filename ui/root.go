@@ -75,13 +75,17 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err != nil {
 			return r, nil // surface via a message in Task 6 polish
 		}
+		// Cache outDir in receive model for View() to use without I/O
+		r.recv.outDir = outDir
 		return r, runCroc(r.prog, r.bin, croc.ReceiveArgs(msg.code, outDir), outDir)
 	case crocEventMsg, crocFinishedMsg:
 		var cmd tea.Cmd
 		if r.cur == screenReceive {
 			var nm tea.Model
 			nm, cmd = r.recv.Update(msg)
-			r.recv = nm.(receiveModel)
+			if recv, ok := nm.(receiveModel); ok {
+				r.recv = recv
+			}
 		}
 		return r, cmd
 	}

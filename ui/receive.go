@@ -23,17 +23,17 @@ const (
 type startReceiveMsg struct{ code string }
 
 type receiveModel struct {
-	bin      string
-	p        *tea.Program
-	state    recvState
-	code     textinput.Model
-	progress progress.Model
-	spinner  spinner.Model
-	pct      float64
-	file     string
-	rate     string
-	status   string
-	err      error
+	bin       string
+	state     recvState
+	code      textinput.Model
+	progress  progress.Model
+	spinner   spinner.Model
+	pct       float64
+	file      string
+	rate      string
+	status    string
+	err       error
+	outDir    string // cached downloads directory
 }
 
 func newReceiveModel(bin string) receiveModel {
@@ -160,16 +160,24 @@ func (m receiveModel) View() string {
 		return m.spinner.View() + " Receiving " + m.file + rate + "\n" + bar
 
 	case recvDone:
-		dir, _ := downloadsDir()
+		dir := m.outDir
+		if dir == "" {
+			var err error
+			dir, err = downloadsDir()
+			if err != nil {
+				dir = "Downloads"
+			}
+		}
 		return "✓ Done! Saved to " + dir + "\n\nPress Esc to go back."
 
 	case recvError:
 		errMsg := "Error"
+		// Prefer specific error from croc, fall back to status
 		if m.err != nil {
 			errMsg = m.err.Error()
 		}
-		if m.status != "" {
-			errMsg = m.status
+		if m.status != "" && m.status != errMsg {
+			errMsg = m.status + ": " + errMsg
 		}
 		return "✗ " + errMsg + "\n\nPress Esc to go back."
 	}

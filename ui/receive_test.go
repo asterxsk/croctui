@@ -13,7 +13,11 @@ func TestReceiveCodeTooShort(t *testing.T) {
 	if cmd != nil {
 		t.Fatal("expected nil cmd for short code")
 	}
-	if got.(receiveModel).status == "" {
+	recv, ok := got.(receiveModel)
+	if !ok {
+		t.Fatal("expected receiveModel from Update")
+	}
+	if recv.status == "" {
 		t.Fatal("expected a status error message")
 	}
 }
