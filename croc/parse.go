@@ -27,8 +27,8 @@ type Event struct {
 
 var (
 	codeRe    = regexp.MustCompile(`Code is:\s+(\S+)`)
-	fileRe    = regexp.MustCompile(`Sending\s+'([^']+)'`)
-	errorRe   = regexp.MustCompile(`(?i)(could not connect|bad response|error:|failed)`)
+	fileRe    = regexp.MustCompile(`(?i)(Sending|Receiving)\s+'([^']+)'`)
+	errorRe   = regexp.MustCompile(`(?i)(could not connect|bad response|error:|connection failed|transfer failed)`)
 	percentRe = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*%`)
 	rateRe    = regexp.MustCompile(`(\d+(?:\.\d+)?)\s*[KMGT]?B/s`)
 )
@@ -36,13 +36,13 @@ var (
 // ParseLine parses a single line/fragment of croc output into an Event.
 func ParseLine(line string) Event {
 	if code := codeRe.FindStringSubmatch(line); code != nil {
-		return Event{Kind: EventCode, Code: code[1], Text: line}
+		return Event{Kind: EventCode, Code: code[1], Text: line, Percent: -1}
 	}
 	if f := fileRe.FindStringSubmatch(line); f != nil {
-		return Event{Kind: EventFile, File: f[1], Text: line}
+		return Event{Kind: EventFile, File: f[2], Text: line, Percent: -1}
 	}
 	if errorRe.MatchString(line) {
-		return Event{Kind: EventError, Text: line}
+		return Event{Kind: EventError, Text: line, Percent: -1}
 	}
 	if p := percentRe.FindStringSubmatch(line); p != nil {
 		pct, _ := strconv.ParseFloat(p[1], 64)
@@ -52,7 +52,7 @@ func ParseLine(line string) Event {
 		}
 		return Event{Kind: EventProgress, Percent: pct, Rate: rate, Text: line}
 	}
-	return Event{Kind: EventStatus, Text: line}
+	return Event{Kind: EventStatus, Text: line, Percent: -1}
 }
 
 // ParseChunk splits raw output on \r and \n, drops blank/whitespace

@@ -91,3 +91,37 @@ func TestReceiveArgs(t *testing.T) {
 		}
 	}
 }
+
+func TestParseReceivingFile(t *testing.T) {
+	ev := ParseLine("Receiving 'incoming.txt' (42 B)")
+	if ev.Kind != EventFile || ev.File != "incoming.txt" {
+		t.Fatalf("got %+v, want EventFile{incoming.txt}", ev)
+	}
+}
+
+func TestParseProgressWithFailedNotError(t *testing.T) {
+	// "failed" in a progress line should NOT be classified as EventError
+	ev := ParseLine("Sending 50% (failed attempts: 0) [===>      ] 1.2 MB/s")
+	if ev.Kind != EventProgress {
+		t.Fatalf("got kind %v, want EventProgress (failed in progress line is not an error)", ev.Kind)
+	}
+	if ev.Percent != 50 {
+		t.Fatalf("got percent %v, want 50", ev.Percent)
+	}
+}
+
+func TestParseErrorKeywords(t *testing.T) {
+	// These should still be EventError
+	cases := []string{
+		"could not connect to 142.132.189.179:9009: bad response",
+		"connection failed: timeout",
+		"transfer failed: broken pipe",
+		"error: something went wrong",
+	}
+	for _, c := range cases {
+		ev := ParseLine(c)
+		if ev.Kind != EventError {
+			t.Fatalf("line %q: got kind %v, want EventError", c, ev.Kind)
+		}
+	}
+}
