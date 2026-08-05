@@ -1,6 +1,10 @@
 package ui
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+
+	"crocgui/croc"
+)
 
 type screen int
 
@@ -14,10 +18,11 @@ const (
 // goScreenMsg asks the root model to switch to screen s.
 type goScreenMsg struct{ s screen }
 
-// rootModel dispatches to the active screen model.
-type rootModel struct {
+// RootModel dispatches to the active screen model.
+type RootModel struct {
 	cur  screen
 	bin  string
+	prog *tea.Program
 	wel  welcomeModel
 	send sendModel
 	recv receiveModel
@@ -27,7 +32,7 @@ type rootModel struct {
 // New returns the root model. If installErr != nil the app starts on the
 // install screen (croc is missing).
 func New(bin string, installErr error) tea.Model {
-	r := &rootModel{cur: screenWelcome, bin: bin, wel: welcomeModel{selected: 0}}
+	r := &RootModel{cur: screenWelcome, bin: bin, wel: welcomeModel{selected: 0}}
 	if installErr != nil {
 		r.cur = screenInstall
 		r.inst = newInstallModel()
@@ -35,7 +40,12 @@ func New(bin string, installErr error) tea.Model {
 	return r
 }
 
-func (r *rootModel) Init() tea.Cmd {
+// SetProgram sets the program pointer so the root can spawn croc commands.
+func (r *RootModel) SetProgram(p *tea.Program) {
+	r.prog = p
+}
+
+func (r *RootModel) Init() tea.Cmd {
 	switch r.cur {
 	case screenWelcome:
 		return r.wel.Init()
@@ -49,12 +59,31 @@ func (r *rootModel) Init() tea.Cmd {
 	return nil
 }
 
-func (r *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case goScreenMsg:
+		switch msg.s {
+		case screenReceive:
+			r.recv = newReceiveModel(r.bin)
+		case screenSend:
+			// Task 5
+		}
 		r.cur = msg.s
-		r.bin = "" // cleared; re-set on route entry (see Tasks 4-6)
 		return r, r.Init()
+	case startReceiveMsg:
+		outDir, err := downloadsDir()
+		if err != nil {
+			return r, nil // surface via a message in Task 6 polish
+		}
+		return r, runCroc(r.prog, r.bin, croc.ReceiveArgs(msg.code, outDir), outDir)
+	case crocEventMsg, crocFinishedMsg:
+		var cmd tea.Cmd
+		if r.cur == screenReceive {
+			var nm tea.Model
+			nm, cmd = r.recv.Update(msg)
+			r.recv = nm.(receiveModel)
+		}
+		return r, cmd
 	}
 	switch r.cur {
 	case screenWelcome:
@@ -65,10 +94,12 @@ func (r *rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return r, nil
 }
 
-func (r *rootModel) View() string {
+func (r *RootModel) View() string {
 	switch r.cur {
 	case screenWelcome:
 		return r.wel.View()
+	case screenReceive:
+		return r.recv.View()
 	}
 	return ""
 }
@@ -76,10 +107,8 @@ func (r *rootModel) View() string {
 // Placeholder screen models, implemented in later tasks.
 
 type sendModel struct{}    // implemented in Task 5
-type receiveModel struct{} // implemented in Task 4
 type installModel struct{} // implemented in Task 6
 
 func (sendModel) Init() tea.Cmd     { return nil }
-func (receiveModel) Init() tea.Cmd  { return nil }
 func (installModel) Init() tea.Cmd  { return nil }
 func newInstallModel() installModel { return installModel{} }
