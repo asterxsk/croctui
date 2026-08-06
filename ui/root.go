@@ -18,7 +18,10 @@ const (
 )
 
 // goScreenMsg asks the root model to switch to screen s.
-type goScreenMsg struct{ s screen }
+type goScreenMsg struct {
+	s   screen
+	bin string
+}
 
 // startSendMsg tells the root to start the croc send subprocess.
 type startSendMsg struct{}
@@ -70,6 +73,9 @@ func (r *RootModel) Init() tea.Cmd {
 func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case goScreenMsg:
+		if msg.bin != "" {
+			r.bin = msg.bin
+		}
 		switch msg.s {
 		case screenReceive:
 			r.recv = newReceiveModel(r.bin)
@@ -140,13 +146,9 @@ func (r *RootModel) View() string {
 		return r.recv.View()
 	case screenSend:
 		return r.send.View()
+	case screenInstall:
+		return r.inst.View()
 	}
 	return ""
 }
 
-// Placeholder screen model, implemented in later tasks.
-
-type installModel struct{} // implemented in Task 6
-
-func (installModel) Init() tea.Cmd  { return nil }
-func newInstallModel() installModel { return installModel{} }
