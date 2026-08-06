@@ -63,12 +63,14 @@ func (m installModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case tea.KeyMsg:
 			if m.state == installDone {
-				// re-detect and move to welcome
-				if bin, err := croc.Detect(); err == nil {
-					return m, func() tea.Msg { return goScreenMsg{s: screenWelcome, bin: bin} }
+				// re-detect and move to welcome ONLY on Enter
+				if k := msg.String(); k == "enter" {
+					if bin, err := croc.Detect(); err == nil {
+						return m, func() tea.Msg { return goScreenMsg{s: screenWelcome, bin: bin} }
+					}
 				}
 			}
-			if k := msg.String(); k == "q" || k == "ctrl+c" {
+			if k := msg.String(); k == "q" || k == "ctrl+c" || k == "esc" {
 				return m, tea.Quit
 			}
 		}
