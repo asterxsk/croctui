@@ -43,6 +43,37 @@ func TestReceiveErrorPrecedence(t *testing.T) {
 	}
 }
 
+func TestReceiveEnterEmitsStartReceive(t *testing.T) {
+	m := newReceiveModel("croc")
+	m.code.SetValue("1234-5678-9012")
+	got, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected a command")
+	}
+	// The command is a Batch of spinner.Tick + startReceiveMsg
+	batch, ok := cmd().(tea.BatchMsg)
+	if !ok {
+		t.Fatalf("expected BatchMsg, got %#v", cmd())
+	}
+	found := false
+	for _, c := range batch {
+		if _, ok := c().(startReceiveMsg); ok {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected startReceiveMsg in batch, got %#v", cmd())
+	}
+	recv, ok := got.(receiveModel)
+	if !ok {
+		t.Fatal("expected receiveModel from Update")
+	}
+	if recv.state != recvWaiting {
+		t.Fatalf("expected recvWaiting state, got %v", recv.state)
+	}
+}
+
 type testError struct {
 	msg string
 }

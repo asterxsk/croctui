@@ -79,7 +79,7 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case startSendMsg:
 		m.state = sendWaiting
 		m.status = "connecting to relay…"
-		return m, tea.Batch(m.spinner.Tick, func() tea.Msg { return nil })
+		return m, m.spinner.Tick
 
 	case crocEventMsg:
 		ev := msg.ev
@@ -143,7 +143,7 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
-	if m.state == sendWaiting || m.state == sendTransferring {
+	if m.state == sendIdle || m.state == sendWaiting || m.state == sendTransferring {
 		m.spinner, cmd = m.spinner.Update(msg)
 	}
 	return m, cmd

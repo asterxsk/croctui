@@ -78,6 +78,13 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		r.cur = msg.s
 		return r, r.Init()
+	case startReceiveMsg:
+		outDir, err := downloadsDir()
+		if err != nil {
+			return r, nil
+		}
+		r.recv.outDir = outDir
+		return r, runCroc(r.prog, r.bin, croc.ReceiveArgs(msg.code, outDir), outDir)
 	case startSendMsg:
 		dir, _ := os.Getwd()
 		return r, runCroc(r.prog, r.bin, croc.SendArgs(r.send.files), dir)
@@ -106,6 +113,13 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case screenWelcome:
 		var cmd tea.Cmd
 		r.wel, cmd = updateWelcome(r.wel, msg)
+		return r, cmd
+	case screenReceive:
+		var cmd tea.Cmd
+		nm, cmd := r.recv.Update(msg)
+		if recv, ok := nm.(receiveModel); ok {
+			r.recv = recv
+		}
 		return r, cmd
 	case screenSend:
 		var cmd tea.Cmd
