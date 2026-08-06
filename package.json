@@ -1,0 +1,25 @@
+{
+  "name": "crocgui",
+  "version": "0.1.0",
+  "description": "A lightweight terminal GUI for the croc file-transfer CLI (Go + Bubble Tea)",
+  "license": "MIT",
+  "bin": {
+    "crocgui": "bin/crocgui.js"
+  },
+  "scripts": {
+    "build": "go build -o bin/crocgui.exe .",
+    "postinstall": "go build -o bin/crocgui.exe ."
+  },
+  "files": [
+    "bin/",
+    "main.go",
+    "go.mod",
+    "go.sum",
+    "croc/",
+    "ui/",
+    "dialog/"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
