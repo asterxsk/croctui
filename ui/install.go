@@ -10,10 +10,11 @@ import (
 type installState int
 
 const (
-	installPrompt installState = iota
+	installPrompt     installState = iota
 	installRunning
 	installDone
 	installFailed
+	installNotDetected
 )
 
 type installModel struct {
@@ -68,6 +69,15 @@ func (m installModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if bin, err := croc.Detect(); err == nil {
 						return m, func() tea.Msg { return goScreenMsg{s: screenWelcome, bin: bin} }
 					}
+					// croc still not detected — show retry state
+					m.state = installNotDetected
+					return m, nil
+				}
+			}
+			if m.state == installNotDetected {
+				if k := msg.String(); k == "enter" {
+					// Retry install
+					return m, func() tea.Msg { return installStartedMsg{} }
 				}
 			}
 			if k := msg.String(); k == "q" || k == "ctrl+c" || k == "esc" {
@@ -93,6 +103,9 @@ func (m installModel) View() string {
 		return m.spinner.View() + " Installing croc via winget…\n"
 	case installDone:
 		return "croc installed successfully! Press Enter to continue.\n"
+	case installNotDetected:
+		return "croc still not detected (PATH may need refresh).\n\n" +
+			"Press Enter to retry install, Esc to quit.\n"
 	case installFailed:
 		return "Failed to install croc:\n" + m.err.Error() + "\n\nPress Esc to quit.\n"
 	}

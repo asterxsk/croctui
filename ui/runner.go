@@ -78,9 +78,8 @@ func runCroc(p *tea.Program, bin string, args []string, dir string) tea.Cmd {
 
 		// Block until the process exits; the goroutine is draining the pipe.
 		// w.Close() signals EOF, unblocking streamOutput's final flush.
-		return tea.ExecProcess(cmd, func(err error) tea.Msg {
-			w.Close()
-			return crocFinishedMsg{err: err}
-		})()
+		err := cmd.Run()
+		w.Close()
+		return crocFinishedMsg{err: err}
 	}
 }

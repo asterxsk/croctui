@@ -87,7 +87,7 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case startReceiveMsg:
 		outDir, err := downloadsDir()
 		if err != nil {
-			return r, nil
+			return r, func() tea.Msg { return crocFinishedMsg{err: err} }
 		}
 		r.recv.outDir = outDir
 		return r, runCroc(r.prog, r.bin, croc.ReceiveArgs(msg.code, outDir), outDir)

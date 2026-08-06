@@ -151,7 +151,7 @@ func (m receiveModel) View() string {
 	case recvTransferring:
 		bar := ""
 		if m.pct >= 0 {
-			bar = m.progress.ViewAs(m.pct)
+			bar = m.progress.ViewAs(m.pct / 100)
 		}
 		rate := ""
 		if m.rate != "" {

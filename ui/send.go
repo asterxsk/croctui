@@ -128,7 +128,10 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.status = "connecting to relay…"
 				return m, func() tea.Msg { return startSendMsg{} }
 			}
-			if k == "esc" || k == "x" {
+			if k == "esc" {
+				return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
+			}
+			if k == "x" || k == "backspace" {
 				if len(m.files) > 0 {
 					m.files = m.files[:len(m.files)-1]
 				}
@@ -141,6 +144,9 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
 			}
 		case sendDone, sendError:
+			if k := msg.String(); k == "enter" && m.state == sendDone {
+				return m, func() tea.Msg { return goScreenMsg{s: screenSend} }
+			}
 			if k := msg.String(); k == "esc" || k == "q" || k == "ctrl+c" {
 				return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
 			}
@@ -177,7 +183,7 @@ func (m sendModel) View() string {
 			}
 			b.WriteString("  " + f + size + "\n")
 		}
-		b.WriteString("\nEnter to send, Esc to go back, x to remove last file")
+		b.WriteString("\nEnter to send, Esc to go back, x/backspace to remove last file")
 		return b.String()
 
 	case sendWaiting:
@@ -188,7 +194,7 @@ func (m sendModel) View() string {
 	case sendTransferring:
 		bar := ""
 		if m.pct >= 0 {
-			bar = m.progress.ViewAs(m.pct)
+			bar = m.progress.ViewAs(m.pct / 100)
 		}
 		rate := ""
 		if m.rate != "" {
@@ -198,7 +204,12 @@ func (m sendModel) View() string {
 		if file == "" && len(m.files) > 0 {
 			file = m.files[0]
 		}
-		return m.spinner.View() + " Sending " + file + rate + "\n" + bar
+		var b strings.Builder
+		b.WriteString(m.spinner.View() + " Sending " + file + rate + "\n" + bar)
+		if m.code != "" {
+			b.WriteString("\n\n" + codeBoxStyle.Render("Code: "+m.code+"\n(code copied to clipboard by croc)"))
+		}
+		return b.String()
 
 	case sendDone:
 		return "✓ Transfer complete\n\nEnter to send another, Esc to go back"
