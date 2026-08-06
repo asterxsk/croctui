@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"os"
+
 	tea "github.com/charmbracelet/bubbletea"
 
 	"crocgui/croc"
@@ -17,6 +19,12 @@ const (
 
 // goScreenMsg asks the root model to switch to screen s.
 type goScreenMsg struct{ s screen }
+
+// startSendMsg tells the root to start the croc send subprocess.
+type startSendMsg struct{}
+
+// dialogFailedMsg is sent when the file dialog returns an error.
+type dialogFailedMsg struct{ err error }
 
 // RootModel dispatches to the active screen model.
 type RootModel struct {
@@ -66,18 +74,17 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case screenReceive:
 			r.recv = newReceiveModel(r.bin)
 		case screenSend:
-			// Task 5
+			r.send = newSendModel(r.bin)
 		}
 		r.cur = msg.s
 		return r, r.Init()
-	case startReceiveMsg:
-		outDir, err := downloadsDir()
-		if err != nil {
-			return r, nil // surface via a message in Task 6 polish
-		}
-		// Cache outDir in receive model for View() to use without I/O
-		r.recv.outDir = outDir
-		return r, runCroc(r.prog, r.bin, croc.ReceiveArgs(msg.code, outDir), outDir)
+	case startSendMsg:
+		dir, _ := os.Getwd()
+		return r, runCroc(r.prog, r.bin, croc.SendArgs(r.send.files), dir)
+	case dialogFailedMsg:
+		r.send.err = msg.err
+		r.send.state = sendError
+		return r, nil
 	case crocEventMsg, crocFinishedMsg:
 		var cmd tea.Cmd
 		if r.cur == screenReceive {
@@ -86,6 +93,12 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if recv, ok := nm.(receiveModel); ok {
 				r.recv = recv
 			}
+		} else if r.cur == screenSend {
+			var nm tea.Model
+			nm, cmd = r.send.Update(msg)
+			if s, ok := nm.(sendModel); ok {
+				r.send = s
+			}
 		}
 		return r, cmd
 	}
@@ -93,6 +106,13 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case screenWelcome:
 		var cmd tea.Cmd
 		r.wel, cmd = updateWelcome(r.wel, msg)
+		return r, cmd
+	case screenSend:
+		var cmd tea.Cmd
+		nm, cmd := r.send.Update(msg)
+		if s, ok := nm.(sendModel); ok {
+			r.send = s
+		}
 		return r, cmd
 	}
 	return r, nil
@@ -104,15 +124,15 @@ func (r *RootModel) View() string {
 		return r.wel.View()
 	case screenReceive:
 		return r.recv.View()
+	case screenSend:
+		return r.send.View()
 	}
 	return ""
 }
 
-// Placeholder screen models, implemented in later tasks.
+// Placeholder screen model, implemented in later tasks.
 
-type sendModel struct{}    // implemented in Task 5
 type installModel struct{} // implemented in Task 6
 
-func (sendModel) Init() tea.Cmd     { return nil }
 func (installModel) Init() tea.Cmd  { return nil }
 func newInstallModel() installModel { return installModel{} }
