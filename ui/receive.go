@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"crocgui/croc"
 )
@@ -23,17 +24,18 @@ const (
 type startReceiveMsg struct{ code string }
 
 type receiveModel struct {
-	bin       string
-	state     recvState
-	code      textinput.Model
-	progress  progress.Model
-	spinner   spinner.Model
-	pct       float64
-	file      string
-	rate      string
-	status    string
-	err       error
-	outDir    string // cached downloads directory
+	bin      string
+	state    recvState
+	code     textinput.Model
+	progress progress.Model
+	spinner  spinner.Model
+	pct      float64
+	file     string
+	rate     string
+	status   string
+	err      error
+	outDir   string // cached downloads directory
+	width    int
 }
 
 func newReceiveModel(bin string) receiveModel {
@@ -141,12 +143,17 @@ func (m receiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m receiveModel) View() string {
+	var content string
 	switch m.state {
 	case recvInput:
-		return m.code.View() + "\n\nPress Enter to start receiving, Esc to go back."
+		content = panel.Render(
+			"Enter the code to receive:\n\n" +
+				m.code.View() + "\n\n" +
+				dimStyle.Render("enter start · esc back"),
+		)
 
 	case recvWaiting:
-		return m.spinner.View() + " " + m.status + "\n\nWaiting for sender..."
+		content = m.spinner.View() + " " + m.status + "\n\n" + dimStyle.Render("Waiting for sender…")
 
 	case recvTransferring:
 		bar := ""
@@ -157,7 +164,7 @@ func (m receiveModel) View() string {
 		if m.rate != "" {
 			rate = " @ " + m.rate
 		}
-		return m.spinner.View() + " Receiving " + m.file + rate + "\n" + bar
+		content = m.spinner.View() + " Receiving " + m.file + rate + "\n" + bar
 
 	case recvDone:
 		dir := m.outDir
@@ -168,7 +175,8 @@ func (m receiveModel) View() string {
 				dir = "Downloads"
 			}
 		}
-		return "✓ Done! Saved to " + dir + "\n\nPress Esc to go back."
+		content = lipgloss.NewStyle().Foreground(colDone).Render("✓ Done! Saved to "+dir) +
+			"\n\n" + dimStyle.Render("Esc to go back")
 
 	case recvError:
 		errMsg := "Error"
@@ -179,7 +187,11 @@ func (m receiveModel) View() string {
 		if m.status != "" && m.status != errMsg {
 			errMsg = m.status + ": " + errMsg
 		}
-		return "✗ " + errMsg + "\n\nPress Esc to go back."
+		content = lipgloss.NewStyle().Foreground(colErr).Render("✗ "+errMsg) +
+			"\n\n" + dimStyle.Render("Esc to go back")
 	}
-	return ""
+	if m.width <= 0 {
+		return content + "\n"
+	}
+	return lipgloss.Place(m.width, 10, lipgloss.Center, lipgloss.Center, content) + "\n"
 }

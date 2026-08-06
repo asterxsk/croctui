@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"crocgui/croc"
 )
@@ -10,7 +11,7 @@ import (
 type installState int
 
 const (
-	installPrompt     installState = iota
+	installPrompt installState = iota
 	installRunning
 	installDone
 	installFailed
@@ -21,6 +22,7 @@ type installModel struct {
 	state   installState
 	spinner spinner.Model
 	err     error
+	width   int
 }
 
 func newInstallModel() installModel {
@@ -91,23 +93,29 @@ func (m installModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m installModel) View() string {
+	var content string
 	switch m.state {
 	case installPrompt:
-		return dimStyle.Padding(1).Render(
+		content = panel.Render(
 			"croc is not installed.\n\n" +
 				"Install it via winget?\n\n" +
-				"  [Y]es   [N]o (quit)\n\n" +
+				"[Y]es   [N]o (quit)\n\n" +
 				dimStyle.Render("This will run: winget install schollz.croc"),
-		) + "\n"
+		)
 	case installRunning:
-		return m.spinner.View() + " Installing croc via winget…\n"
+		content = m.spinner.View() + " Installing croc via winget…"
 	case installDone:
-		return "croc installed successfully! Press Enter to continue.\n"
+		content = lipgloss.NewStyle().Foreground(colDone).Render("✓ croc installed successfully!") +
+			"\n\n" + dimStyle.Render("Press Enter to continue.")
 	case installNotDetected:
-		return "croc still not detected (PATH may need refresh).\n\n" +
-			"Press Enter to retry install, Esc to quit.\n"
+		content = "croc still not detected (PATH may need refresh).\n\n" +
+			dimStyle.Render("Enter retry install · Esc quit")
 	case installFailed:
-		return "Failed to install croc:\n" + m.err.Error() + "\n\nPress Esc to quit.\n"
+		content = lipgloss.NewStyle().Foreground(colErr).Render("✗ Failed to install croc:\n"+m.err.Error()) +
+			"\n\n" + dimStyle.Render("Press Esc to quit.")
 	}
-	return ""
+	if m.width <= 0 {
+		return content + "\n"
+	}
+	return lipgloss.Place(m.width, 10, lipgloss.Center, lipgloss.Center, content) + "\n"
 }

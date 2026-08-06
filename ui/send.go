@@ -6,8 +6,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/lipgloss"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 
 	"crocgui/croc"
 	"crocgui/dialog"
@@ -36,6 +36,8 @@ type sendModel struct {
 	rate     string
 	status   string
 	err      error
+	width    int
+	adding   bool // true when the current dialog pick is "add more files"
 }
 
 func newSendModel(bin string) sendModel {
@@ -64,15 +66,49 @@ func (m sendModel) Init() tea.Cmd {
 	}
 }
 
+// addMoreCmd re-opens the native dialog to append files to the send list.
+// The model sets adding=true before returning it so the resulting
+// sendFilesPickedMsg appends rather than replaces.
+var addMoreCmd = func() tea.Msg {
+	files, err := dialog.PickFiles()
+	if err != nil {
+		return dialogFailedMsg{err: err}
+	}
+	return sendFilesPickedMsg{files: files, cancelled: len(files) == 0}
+}
+
 func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case sendFilesPickedMsg:
 		if msg.cancelled || len(msg.files) == 0 {
+			// Cancel returns to confirm (if we were adding) or welcome.
+			if m.adding {
+				m.adding = false
+				m.state = sendConfirm
+				return m, nil
+			}
 			m.state = sendIdle
 			m.status = ""
 			return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
 		}
-		m.files = msg.files
+		if m.adding {
+			// Append new files, dedupe exact paths.
+			for _, f := range msg.files {
+				dup := false
+				for _, existing := range m.files {
+					if f == existing {
+						dup = true
+						break
+					}
+				}
+				if !dup {
+					m.files = append(m.files, f)
+				}
+			}
+			m.adding = false
+		} else {
+			m.files = msg.files
+		}
 		m.state = sendConfirm
 		return m, nil
 
@@ -128,6 +164,13 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.status = "connecting to relay…"
 				return m, func() tea.Msg { return startSendMsg{} }
 			}
+			if k == "a" {
+				// Add more files: re-open the dialog and append (dedupe).
+				m.adding = true
+				m.state = sendIdle
+				m.status = "opening file dialog…"
+				return m, addMoreCmd
+			}
 			if k == "esc" {
 				return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
 			}
@@ -162,15 +205,16 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var (
 	codeBoxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			Padding(1, 2).
-			Margin(1, 0)
+		Border(lipgloss.RoundedBorder()).
+		Padding(1, 2).
+		Margin(1, 0)
 )
 
 func (m sendModel) View() string {
+	var content string
 	switch m.state {
 	case sendIdle:
-		return m.spinner.View() + " Opening file dialog…"
+		content = m.spinner.View() + " Opening file dialog…"
 
 	case sendConfirm:
 		var b strings.Builder
@@ -181,15 +225,15 @@ func (m sendModel) View() string {
 			if err == nil {
 				size = " (" + formatSize(info.Size()) + ")"
 			}
-			b.WriteString("  " + f + size + "\n")
+			b.WriteString("  • " + f + size + "\n")
 		}
-		b.WriteString("\nEnter to send, Esc to go back, x/backspace to remove last file")
-		return b.String()
+		b.WriteString("\n" + dimStyle.Render("a add more files · x/backspace remove last · enter send · esc back"))
+		content = panel.Render(b.String())
 
 	case sendWaiting:
-		return m.spinner.View() + " " + m.status + "\n\n" +
-			codeBoxStyle.Render("Code: "+m.code+"\n(code copied to clipboard by croc)") +
-			"\n\nEsc to go back"
+		content = m.spinner.View() + " " + m.status + "\n\n" +
+			codeBoxStyle.Render("Code: "+m.code+"\n"+dimStyle.Render("(code copied to clipboard by croc)")) +
+			"\n\n" + dimStyle.Render("Esc to go back")
 
 	case sendTransferring:
 		bar := ""
@@ -207,12 +251,13 @@ func (m sendModel) View() string {
 		var b strings.Builder
 		b.WriteString(m.spinner.View() + " Sending " + file + rate + "\n" + bar)
 		if m.code != "" {
-			b.WriteString("\n\n" + codeBoxStyle.Render("Code: "+m.code+"\n(code copied to clipboard by croc)"))
+			b.WriteString("\n\n" + codeBoxStyle.Render("Code: "+m.code+"\n"+dimStyle.Render("(code copied to clipboard by croc)")))
 		}
-		return b.String()
+		content = b.String()
 
 	case sendDone:
-		return "✓ Transfer complete\n\nEnter to send another, Esc to go back"
+		content = lipgloss.NewStyle().Foreground(colDone).Render("✓ Transfer complete") +
+			"\n\n" + dimStyle.Render("enter send another · esc back")
 
 	case sendError:
 		errMsg := "Error"
@@ -222,7 +267,11 @@ func (m sendModel) View() string {
 		if m.status != "" && m.status != errMsg {
 			errMsg = m.status + ": " + errMsg
 		}
-		return "✗ " + errMsg + "\n\nEsc to go back"
+		content = lipgloss.NewStyle().Foreground(colErr).Render("✗ "+errMsg) +
+			"\n\n" + dimStyle.Render("Esc to go back")
 	}
-	return ""
+	if m.width <= 0 {
+		return content + "\n"
+	}
+	return lipgloss.Place(m.width, 10, lipgloss.Center, lipgloss.Center, content) + "\n"
 }

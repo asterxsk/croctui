@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
@@ -15,6 +16,7 @@ const (
 	screenSend
 	screenReceive
 	screenInstall
+	screenHistory
 )
 
 // goScreenMsg asks the root model to switch to screen s.
@@ -31,13 +33,26 @@ type dialogFailedMsg struct{ err error }
 
 // RootModel dispatches to the active screen model.
 type RootModel struct {
-	cur  screen
-	bin  string
-	prog *tea.Program
-	wel  welcomeModel
-	send sendModel
-	recv receiveModel
-	inst installModel
+	cur   screen
+	bin   string
+	prog  *tea.Program
+	wel   welcomeModel
+	send  sendModel
+	recv  receiveModel
+	inst  installModel
+	hist  historyModel
+	width int
+}
+
+// setSize stores the terminal size on the active screen so it can fill the
+// window and center its content.
+func (r *RootModel) setSize(w int) {
+	r.width = w
+	r.wel.width = w
+	r.send.width = w
+	r.recv.width = w
+	r.inst.width = w
+	r.hist.width = w
 }
 
 // New returns the root model. If installErr != nil the app starts on the
@@ -56,6 +71,43 @@ func (r *RootModel) SetProgram(p *tea.Program) {
 	r.prog = p
 }
 
+// recordSend appends a send entry to the in-session history.
+func (r *RootModel) recordSend(err error) {
+	r.hist.add(HistoryEntry{
+		Dir:   histSend,
+		Files: append([]string{}, r.send.files...),
+		Code:  r.send.code,
+		Time:  nowStamp(),
+		OK:    err == nil,
+		Err:   errStr(err),
+	})
+}
+
+// recordRecv appends a receive entry to the in-session history.
+func (r *RootModel) recordRecv(err error) {
+	r.hist.add(HistoryEntry{
+		Dir:   histRecv,
+		Files: []string{r.recv.file},
+		Code:  r.recv.code.Value(),
+		Time:  nowStamp(),
+		OK:    err == nil,
+		Err:   errStr(err),
+	})
+}
+
+// errStr returns "" for nil errors, else the error message.
+func errStr(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+// nowStamp returns a short HH:MM wall-clock stamp for history display.
+func nowStamp() string {
+	return time.Now().Format("15:04")
+}
+
 func (r *RootModel) Init() tea.Cmd {
 	switch r.cur {
 	case screenWelcome:
@@ -66,12 +118,17 @@ func (r *RootModel) Init() tea.Cmd {
 		return r.recv.Init()
 	case screenInstall:
 		return r.inst.Init()
+	case screenHistory:
+		return r.hist.Init()
 	}
 	return nil
 }
 
 func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		r.setSize(msg.Width)
+		return r, nil
 	case goScreenMsg:
 		if msg.bin != "" {
 			r.bin = msg.bin
@@ -113,6 +170,14 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				r.send = s
 			}
 		}
+		// Record history when a transfer finishes.
+		if fin, ok := msg.(crocFinishedMsg); ok {
+			if r.cur == screenSend {
+				r.recordSend(fin.err)
+			} else if r.cur == screenReceive {
+				r.recordRecv(fin.err)
+			}
+		}
 		return r, cmd
 	}
 	switch r.cur {
@@ -134,6 +199,13 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			r.send = s
 		}
 		return r, cmd
+	case screenHistory:
+		var cmd tea.Cmd
+		nm, cmd := r.hist.Update(msg)
+		if h, ok := nm.(historyModel); ok {
+			r.hist = h
+		}
+		return r, cmd
 	}
 	return r, nil
 }
@@ -148,7 +220,8 @@ func (r *RootModel) View() string {
 		return r.send.View()
 	case screenInstall:
 		return r.inst.View()
+	case screenHistory:
+		return r.hist.View()
 	}
 	return ""
 }
-

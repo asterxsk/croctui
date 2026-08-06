@@ -17,10 +17,23 @@ func TestWelcomeViewShowsCroc(t *testing.T) {
 func TestWelcomeViewShowsActions(t *testing.T) {
 	m := welcomeModel{}
 	v := m.View()
-	for _, want := range []string{"Send", "Receive"} {
+	for _, want := range []string{"Send", "Receive", "History"} {
 		if !strings.Contains(v, want) {
 			t.Fatalf("welcome view missing %q: %q", want, v)
 		}
+	}
+}
+
+func TestWelcomeEnterSendsGoHistory(t *testing.T) {
+	m := welcomeModel{selected: 2} // 2 = History
+	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	if cmd == nil {
+		t.Fatal("expected a command, got nil")
+	}
+	msg := cmd()
+	gs, ok := msg.(goScreenMsg)
+	if !ok || gs.s != screenHistory {
+		t.Fatalf("expected goScreenMsg(screenHistory), got %#v", msg)
 	}
 }
 
