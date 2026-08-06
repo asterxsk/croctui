@@ -45,3 +45,18 @@ func TestSendEnterEmitsStartSend(t *testing.T) {
 		t.Fatalf("expected startSendMsg, got %#v", cmd())
 	}
 }
+
+// TestSendEnterTransitionsToWaiting pins the fix: Enter in sendConfirm must
+// transition to sendWaiting (so the code box is reachable) rather than stay
+// in sendConfirm — the root launches croc on startSendMsg, and the model must
+// be in sendWaiting to render the code when EventCode arrives.
+func TestSendEnterTransitionsToWaiting(t *testing.T) {
+	m := newSendModel("croc")
+	m.files = []string{"a.txt"}
+	m.state = sendConfirm
+	nm, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	sm := nm.(sendModel)
+	if sm.state != sendWaiting {
+		t.Fatalf("state = %v, want sendWaiting", sm.state)
+	}
+}

@@ -76,10 +76,9 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = sendConfirm
 		return m, nil
 
-	case startSendMsg:
-		m.state = sendWaiting
-		m.status = "connecting to relay…"
-		return m, m.spinner.Tick
+	// NOTE: startSendMsg is handled by the root (it launches the croc
+	// subprocess). The send model transitions to sendWaiting itself in the
+	// sendConfirm Enter handler, so no case is needed here.
 
 	case crocEventMsg:
 		ev := msg.ev
@@ -121,6 +120,12 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case sendConfirm:
 			k := msg.String()
 			if k == "enter" {
+				// Transition to sendWaiting NOW so the model shows the code box
+				// while the root launches croc. (The root handles startSendMsg
+				// to spawn the subprocess; the model must already be in
+				// sendWaiting to render the code when EventCode arrives.)
+				m.state = sendWaiting
+				m.status = "connecting to relay…"
 				return m, func() tea.Msg { return startSendMsg{} }
 			}
 			if k == "esc" || k == "x" {
