@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -33,26 +35,34 @@ type dialogFailedMsg struct{ err error }
 
 // RootModel dispatches to the active screen model.
 type RootModel struct {
-	cur   screen
-	bin   string
-	prog  *tea.Program
-	wel   welcomeModel
-	send  sendModel
-	recv  receiveModel
-	inst  installModel
-	hist  historyModel
-	width int
+	cur    screen
+	bin    string
+	prog   *tea.Program
+	cancel context.CancelFunc
+	wel    welcomeModel
+	send   sendModel
+	recv   receiveModel
+	inst   installModel
+	hist   historyModel
+	width  int
+	height int
 }
 
 // setSize stores the terminal size on the active screen so it can fill the
 // window and center its content.
-func (r *RootModel) setSize(w int) {
+func (r *RootModel) setSize(w, h int) {
 	r.width = w
+	r.height = h
 	r.wel.width = w
+	r.wel.height = h
 	r.send.width = w
+	r.send.height = h
 	r.recv.width = w
+	r.recv.height = h
 	r.inst.width = w
+	r.inst.height = h
 	r.hist.width = w
+	r.hist.height = h
 }
 
 // New returns the root model. If installErr != nil the app starts on the
@@ -127,9 +137,13 @@ func (r *RootModel) Init() tea.Cmd {
 func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		r.setSize(msg.Width)
+		r.setSize(msg.Width, msg.Height)
 		return r, nil
 	case goScreenMsg:
+		if r.cancel != nil {
+			r.cancel()
+			r.cancel = nil
+		}
 		if msg.bin != "" {
 			r.bin = msg.bin
 		}
@@ -140,17 +154,43 @@ func (r *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			r.send = newSendModel(r.bin)
 		}
 		r.cur = msg.s
+		// Re-apply the last-known window size: a freshly created model starts at
+		// width/height 0 and would render top-left until the next WindowSizeMsg.
+		if r.width > 0 {
+			r.setSize(r.width, r.height)
+		}
 		return r, r.Init()
 	case startReceiveMsg:
+		if r.prog == nil {
+			err := fmt.Errorf("transfer runner is not initialized")
+			r.recv.err = err
+			r.recv.state = recvError
+			return r, nil
+		}
 		outDir, err := downloadsDir()
 		if err != nil {
 			return r, func() tea.Msg { return crocFinishedMsg{err: err} }
 		}
 		r.recv.outDir = outDir
-		return r, runCroc(r.prog, r.bin, croc.ReceiveArgs(msg.code, outDir), outDir)
+		ctx, cancel := context.WithCancel(context.Background())
+		r.cancel = cancel
+		return r, runCrocContext(ctx, r.prog, r.bin, croc.ReceiveArgs(msg.code, outDir), outDir)
 	case startSendMsg:
-		dir, _ := os.Getwd()
-		return r, runCroc(r.prog, r.bin, croc.SendArgs(r.send.files), dir)
+		if r.prog == nil {
+			err := fmt.Errorf("transfer runner is not initialized")
+			r.send.err = err
+			r.send.state = sendError
+			return r, nil
+		}
+		dir, err := os.Getwd()
+		if err != nil {
+			r.send.err = err
+			r.send.state = sendError
+			return r, nil
+		}
+		ctx, cancel := context.WithCancel(context.Background())
+		r.cancel = cancel
+		return r, runCrocContext(ctx, r.prog, r.bin, croc.SendArgs(r.send.files), dir)
 	case dialogFailedMsg:
 		r.send.err = msg.err
 		r.send.state = sendError

@@ -16,8 +16,7 @@ import (
 type sendState int
 
 const (
-	sendIdle sendState = iota
-	sendConfirm
+	sendConfirm sendState = iota
 	sendWaiting
 	sendTransferring
 	sendDone
@@ -28,6 +27,7 @@ type sendModel struct {
 	bin      string
 	state    sendState
 	files    []string
+	sel      int // cursor into the file list (sendConfirm)
 	code     string
 	file     string
 	progress progress.Model
@@ -37,13 +37,13 @@ type sendModel struct {
 	status   string
 	err      error
 	width    int
-	adding   bool // true when the current dialog pick is "add more files"
+	height   int
 }
 
 func newSendModel(bin string) sendModel {
 	return sendModel{
 		bin:      bin,
-		state:    sendIdle,
+		state:    sendConfirm,
 		progress: progress.New(progress.WithDefaultGradient()),
 		spinner:  spinner.New(spinner.WithSpinner(spinner.Dot)),
 		pct:      -1,
@@ -56,20 +56,8 @@ type sendFilesPickedMsg struct {
 	cancelled bool
 }
 
-func (m sendModel) Init() tea.Cmd {
-	return func() tea.Msg {
-		files, err := dialog.PickFiles()
-		if err != nil {
-			return dialogFailedMsg{err: err}
-		}
-		return sendFilesPickedMsg{files: files, cancelled: len(files) == 0}
-	}
-}
-
-// addMoreCmd re-opens the native dialog to append files to the send list.
-// The model sets adding=true before returning it so the resulting
-// sendFilesPickedMsg appends rather than replaces.
-var addMoreCmd = func() tea.Msg {
+// pickFilesCmd opens the native file dialog and reports the selection.
+var pickFilesCmd = func() tea.Msg {
 	files, err := dialog.PickFiles()
 	if err != nil {
 		return dialogFailedMsg{err: err}
@@ -77,37 +65,54 @@ var addMoreCmd = func() tea.Msg {
 	return sendFilesPickedMsg{files: files, cancelled: len(files) == 0}
 }
 
+// pickFolderCmd opens the native folder dialog and reports the selection.
+var pickFolderCmd = func() tea.Msg {
+	files, err := dialog.PickFolder()
+	if err != nil {
+		return dialogFailedMsg{err: err}
+	}
+	return sendFilesPickedMsg{files: files, cancelled: len(files) == 0}
+}
+
+func (m sendModel) Init() tea.Cmd {
+	// No file dialog on entry — the send screen opens an empty navigable list
+	// and the user presses Enter to add files.
+	return nil
+}
+
+// sendFiles starts the transfer: transition to sendWaiting NOW so the model
+// shows the code box while the root launches croc (the root handles
+// startSendMsg to spawn the subprocess; the model must already be in
+// sendWaiting to render the code when EventCode arrives). No-op when there are
+// no files.
+func (m sendModel) sendFiles() (sendModel, tea.Cmd) {
+	if len(m.files) == 0 {
+		return m, nil
+	}
+	m.state = sendWaiting
+	m.status = "connecting to relay…"
+	return m, func() tea.Msg { return startSendMsg{} }
+}
+
 func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case sendFilesPickedMsg:
 		if msg.cancelled || len(msg.files) == 0 {
-			// Cancel returns to confirm (if we were adding) or welcome.
-			if m.adding {
-				m.adding = false
-				m.state = sendConfirm
-				return m, nil
-			}
-			m.state = sendIdle
-			m.status = ""
-			return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
+			// Cancel just closes the dialog — stay on the list.
+			return m, nil
 		}
-		if m.adding {
-			// Append new files, dedupe exact paths.
-			for _, f := range msg.files {
-				dup := false
-				for _, existing := range m.files {
-					if f == existing {
-						dup = true
-						break
-					}
-				}
-				if !dup {
-					m.files = append(m.files, f)
+		// Append new files, dedupe exact paths.
+		for _, f := range msg.files {
+			dup := false
+			for _, existing := range m.files {
+				if f == existing {
+					dup = true
+					break
 				}
 			}
-			m.adding = false
-		} else {
-			m.files = msg.files
+			if !dup {
+				m.files = append(m.files, f)
+			}
 		}
 		m.state = sendConfirm
 		return m, nil
@@ -155,35 +160,46 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch m.state {
 		case sendConfirm:
 			k := msg.String()
-			if k == "enter" {
-				// Transition to sendWaiting NOW so the model shows the code box
-				// while the root launches croc. (The root handles startSendMsg
-				// to spawn the subprocess; the model must already be in
-				// sendWaiting to render the code when EventCode arrives.)
-				m.state = sendWaiting
-				m.status = "connecting to relay…"
-				return m, func() tea.Msg { return startSendMsg{} }
-			}
-			if k == "a" {
+			switch k {
+			case "enter":
+				// Enter is the "interact" key — it always opens the add dialog
+				// (files when empty, or more files). Sending happens via the
+				// spacebar.
+				return m, pickFilesCmd
+			case "a":
 				// Add more files: re-open the dialog and append (dedupe).
-				m.adding = true
-				m.state = sendIdle
-				m.status = "opening file dialog…"
-				return m, addMoreCmd
-			}
-			if k == "esc" {
+				return m, pickFilesCmd
+			case "A":
+				// Shift+a: pick a folder instead of files.
+				return m, pickFolderCmd
+			case " ":
+				// Space sends.
+				return m.sendFiles()
+			case "x", "backspace":
+				// Delete the selected file (or the last one if none selected).
+				i := m.sel
+				if i >= len(m.files) {
+					i = len(m.files) - 1
+				}
+				if i >= 0 {
+					m.files = append(m.files[:i], m.files[i+1:]...)
+					if m.sel >= len(m.files) && m.sel > 0 {
+						m.sel--
+					}
+				}
+			case "up", "k", "w":
+				if m.sel > 0 {
+					m.sel--
+				}
+			case "down", "j", "s":
+				if m.sel < len(m.files)-1 {
+					m.sel++
+				}
+			case "esc":
 				return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
 			}
-			if k == "x" || k == "backspace" {
-				if len(m.files) > 0 {
-					m.files = m.files[:len(m.files)-1]
-				}
-				if len(m.files) == 0 {
-					return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
-				}
-			}
-		case sendIdle:
-			if k := msg.String(); k == "esc" || k == "q" || k == "ctrl+c" {
+		case sendWaiting:
+			if k := msg.String(); k == "esc" {
 				return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
 			}
 		case sendDone, sendError:
@@ -197,7 +213,7 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmd tea.Cmd
-	if m.state == sendIdle || m.state == sendWaiting || m.state == sendTransferring {
+	if m.state == sendWaiting || m.state == sendTransferring {
 		m.spinner, cmd = m.spinner.Update(msg)
 	}
 	return m, cmd
@@ -205,33 +221,59 @@ func (m sendModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var (
 	codeBoxStyle = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(lipgloss.NormalBorder()).
 		Padding(1, 2).
 		Margin(1, 0)
 )
 
+// sendList renders the navigable file-list screen: an empty list shows a
+// centered "Press Enter to add" prompt; a populated list shows each file with
+// the selected row highlighted. Keyboard-driven only — no on-screen buttons;
+// the footer describes the controls (move, delete, add via Enter, send via
+// space).
+func (m sendModel) sendList() string {
+	var b strings.Builder
+	if len(m.files) == 0 {
+		b.WriteString("Files to send:\n\n" +
+			dimStyle.Render("Press Enter to add\n"))
+	} else {
+		b.WriteString("Files to send:\n\n")
+		for i, f := range m.files {
+			mark := "  "
+			icon := "📄"
+			row := "  " + f
+			if info, err := os.Stat(f); err == nil {
+				if info.IsDir() {
+					// A directory's Size() is meaningless (often 0) — show a
+					// folder marker instead of a misleading "0 B".
+					icon = "📁"
+				} else {
+					row += " (" + formatSize(info.Size()) + ")"
+				}
+			}
+			row = icon + " " + row
+			if i == m.sel {
+				mark = "› "
+				row = selectedRow.Render(row)
+			}
+			b.WriteString(mark + row + "\n")
+		}
+	}
+	list := panel.Render(b.String())
+
+	// Keyboard-only — no on-screen buttons; the footer is the control hint.
+	footer := footerLine("↑/↓ or w/s or j/k move · x delete · enter add · shift+a folder · space send · esc back")
+	return lipgloss.JoinVertical(lipgloss.Center, list, "", footer)
+}
+
 func (m sendModel) View() string {
 	var content string
 	switch m.state {
-	case sendIdle:
-		content = m.spinner.View() + " Opening file dialog…"
-
 	case sendConfirm:
-		var b strings.Builder
-		b.WriteString("Files to send:\n\n")
-		for _, f := range m.files {
-			info, err := os.Stat(f)
-			size := ""
-			if err == nil {
-				size = " (" + formatSize(info.Size()) + ")"
-			}
-			b.WriteString("  • " + f + size + "\n")
-		}
-		b.WriteString("\n" + dimStyle.Render("a add more files · x/backspace remove last · enter send · esc back"))
-		content = panel.Render(b.String())
+		content = m.sendList()
 
 	case sendWaiting:
-		content = m.spinner.View() + " " + m.status + "\n\n" +
+		content = m.status + "\n\n" +
 			codeBoxStyle.Render("Code: "+m.code+"\n"+dimStyle.Render("(code copied to clipboard by croc)")) +
 			"\n\n" + dimStyle.Render("Esc to go back")
 
@@ -270,8 +312,5 @@ func (m sendModel) View() string {
 		content = lipgloss.NewStyle().Foreground(colErr).Render("✗ "+errMsg) +
 			"\n\n" + dimStyle.Render("Esc to go back")
 	}
-	if m.width <= 0 {
-		return content + "\n"
-	}
-	return lipgloss.Place(m.width, 10, lipgloss.Center, lipgloss.Center, content) + "\n"
+	return screenView(m.width, m.height, "send files to any device", content)
 }

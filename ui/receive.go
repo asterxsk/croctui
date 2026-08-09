@@ -36,6 +36,7 @@ type receiveModel struct {
 	err      error
 	outDir   string // cached downloads directory
 	width    int
+	height   int
 }
 
 func newReceiveModel(bin string) receiveModel {
@@ -60,20 +61,26 @@ func (m receiveModel) Init() tea.Cmd {
 	return m.spinner.Tick
 }
 
+// startReceive validates the code and begins the receive, transitioning to
+// recvWaiting. Returns a no-op Cmd when the code is too short.
+func (m receiveModel) startReceive() (receiveModel, tea.Cmd) {
+	code := m.code.Value()
+	if len(code) < 6 {
+		m.status = "code must be at least 6 characters"
+		return m, nil
+	}
+	m.state = recvWaiting
+	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+		return startReceiveMsg{code: code}
+	})
+}
+
 func (m receiveModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch m.state {
 	case recvInput:
 		if k, ok := msg.(tea.KeyMsg); ok {
 			if k.String() == "enter" {
-				code := m.code.Value()
-				if len(code) < 6 {
-					m.status = "code must be at least 6 characters"
-					return m, nil
-				}
-				m.state = recvWaiting
-				return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
-					return startReceiveMsg{code: code}
-				})
+				return m.startReceive()
 			}
 			if k.String() == "esc" {
 				return m, func() tea.Msg { return goScreenMsg{s: screenWelcome} }
@@ -146,11 +153,12 @@ func (m receiveModel) View() string {
 	var content string
 	switch m.state {
 	case recvInput:
-		content = panel.Render(
+		input := panel.Render(
 			"Enter the code to receive:\n\n" +
 				m.code.View() + "\n\n" +
 				dimStyle.Render("enter start · esc back"),
 		)
+		content = input
 
 	case recvWaiting:
 		content = m.spinner.View() + " " + m.status + "\n\n" + dimStyle.Render("Waiting for sender…")
@@ -190,8 +198,5 @@ func (m receiveModel) View() string {
 		content = lipgloss.NewStyle().Foreground(colErr).Render("✗ "+errMsg) +
 			"\n\n" + dimStyle.Render("Esc to go back")
 	}
-	if m.width <= 0 {
-		return content + "\n"
-	}
-	return lipgloss.Place(m.width, 10, lipgloss.Center, lipgloss.Center, content) + "\n"
+	return screenView(m.width, m.height, "receive files from any device", content)
 }

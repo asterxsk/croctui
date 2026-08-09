@@ -8,16 +8,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// lipglossPlace centers a block of rendered content horizontally (and pads
-// vertically) within width w. If w <= 0 it returns the content uncentered.
-func lipglossPlace(w int, lines ...string) string {
-	content := lipgloss.JoinVertical(lipgloss.Center, lines...)
-	if w <= 0 {
-		return content
-	}
-	return lipgloss.Place(w, 12, lipgloss.Center, lipgloss.Top, content)
-}
-
 // joinLines joins rendered lines with newlines (used to compose list rows).
 func joinLines(rows []string) string {
 	return strings.Join(rows, "\n")
@@ -62,6 +52,7 @@ type HistoryEntry struct {
 type historyModel struct {
 	entries []HistoryEntry
 	width   int
+	height  int
 	sel     int // selected row index (for scrolling emphasis)
 }
 
@@ -97,10 +88,11 @@ func (h historyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (h historyModel) View() string {
-	header := headerStyle.Render("History")
+	footer := footerPad("up/down or j/k move · esc or q back")
 	if len(h.entries) == 0 {
 		empty := panel.Render("No transfers yet.\n\nTransfers you make will appear here.")
-		return lipglossPlace(h.width, header, empty)
+		content := lipgloss.JoinVertical(lipgloss.Center, empty, separatorLine(), footer)
+		return screenView(h.width, h.height, "your transfer history", content)
 	}
 	var rows []string
 	for i, e := range h.entries {
@@ -122,6 +114,6 @@ func (h historyModel) View() string {
 		rows = append(rows, mark+status+" "+e.Dir.String()+"  "+files+"  code="+e.Code+"  "+e.Time)
 	}
 	list := panel.Render(joinLines(rows))
-	footer := footerHint.Render("up/down or j/k move · esc or q back")
-	return lipglossPlace(h.width, header, list, footer)
+	content := lipgloss.JoinVertical(lipgloss.Center, list, separatorLine(), footer)
+	return screenView(h.width, h.height, "your transfer history", content)
 }

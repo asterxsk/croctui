@@ -88,11 +88,13 @@ func TestSendConfirmEscGoesBack(t *testing.T) {
 }
 
 // TestSendConfirmXRemovesLastFile pins the fix for Important 7:
-// x/backspace in sendConfirm should remove the last file.
+// x/backspace in sendConfirm removes the file under the cursor (the list is
+// now navigable; the cursor defaults to the first row).
 func TestSendConfirmXRemovesLastFile(t *testing.T) {
 	m := newSendModel("croc")
 	m.files = []string{"a.txt", "b.txt"}
 	m.state = sendConfirm
+	m.sel = 1 // select the last row
 
 	nm, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("x")})
 	sm := nm.(sendModel)

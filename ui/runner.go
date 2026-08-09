@@ -3,6 +3,7 @@ package ui
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"io"
 	"os/exec"
 	"strings"
@@ -66,8 +67,14 @@ func streamOutput(p *tea.Program, r io.Reader) {
 // when Bubble Tea actually executes it. If the command is never run (e.g. the
 // app quits), no goroutine is spawned and nothing leaks.
 func runCroc(p *tea.Program, bin string, args []string, dir string) tea.Cmd {
+	return runCrocContext(context.Background(), p, bin, args, dir)
+}
+
+// runCrocContext is runCroc with lifecycle control. Cancelling ctx terminates
+// a croc process that is waiting for a peer, such as after Esc from sendWaiting.
+func runCrocContext(ctx context.Context, p *tea.Program, bin string, args []string, dir string) tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command(bin, args...)
+		cmd := exec.CommandContext(ctx, bin, args...)
 		cmd.Dir = dir
 		r, w := io.Pipe()
 		cmd.Stdout = w
