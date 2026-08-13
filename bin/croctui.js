@@ -14,11 +14,7 @@ function binName() {
   return `croctui-${plat}-${arch}${ext}`;
 }
 
-function localBin() {
-  return path.join(__dirname, binName());
-}
-
-// Also check legacy names for dev builds.
+function localBin() { return path.join(__dirname, binName()); }
 function fallbackBins() {
   return [
     path.join(__dirname, process.platform === 'win32' ? 'croctui.exe' : 'croctui'),
@@ -26,7 +22,6 @@ function fallbackBins() {
     path.join(PKG_ROOT, 'bin', process.platform === 'win32' ? 'croctui.exe' : 'croctui'),
   ];
 }
-
 function findBin() {
   const primary = localBin();
   if (fs.existsSync(primary)) return primary;
@@ -34,24 +29,32 @@ function findBin() {
   return primary;
 }
 
+// Robust fetch: buffer in memory, handle redirects, timeout, then atomic write.
+// Avoids Windows ENOENT on rename when the file handle is still open.
 function fetch(url, dest) {
   return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(dest);
-    https.get(url, { headers: { 'User-Agent': 'croctui-installer' } }, res => {
+    const req = https.get(url, { headers: { 'User-Agent': 'croctui-installer' } }, res => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-        file.close(() => fs.unlink(dest, () => {}));
+        res.resume();
         fetch(res.headers.location, dest).then(resolve, reject);
         return;
       }
       if (res.statusCode !== 200) {
-        file.close(() => fs.unlink(dest, () => {}));
+        res.resume();
         reject(new Error(`download failed: ${res.statusCode} ${res.statusMessage} for ${url}`));
         return;
       }
-      res.pipe(file);
-      file.on('finish', () => file.close(resolve));
-      file.on('error', reject);
-    }).on('error', reject);
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('error', reject);
+      res.on('end', () => {
+        fs.promises.mkdir(path.dirname(dest), { recursive: true }).then(() => {
+          return fs.promises.writeFile(dest, Buffer.concat(chunks));
+        }).then(resolve, reject);
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(30000, () => req.destroy(new Error('timeout fetching ' + url)));
   });
 }
 
@@ -59,44 +62,44 @@ async function ensureBin() {
   const bin = findBin();
   if (fs.existsSync(bin)) return bin;
 
-  // Try to download from GitHub Releases (no Go required).
   let version = '0.1.0';
   try { version = require('../package.json').version; } catch {}
   const tag = `v${version}`;
   const asset = binName();
   const base = process.env.CROCTUI_RELEASE_BASE || 'https://github.com/asterxsk/croctui/releases/download';
   const url = `${base}/${tag}/${asset}`;
-
   const tmp = bin + '.tmp';
+
   try {
     await fetch(url, tmp);
-    fs.renameSync(tmp, bin);
-    if (process.platform !== 'win32') fs.chmodSync(bin, 0o755);
+    // Windows rename fails if target exists or is locked — remove first, fallback to copy
+    try { await fs.promises.unlink(bin); } catch {}
+    try {
+      await fs.promises.rename(tmp, bin);
+    } catch {
+      await fs.promises.copyFile(tmp, bin);
+      await fs.promises.unlink(tmp);
+    }
+    if (process.platform !== 'win32') await fs.promises.chmod(bin, 0o755);
     return bin;
   } catch (e) {
-    try { fs.unlinkSync(tmp); } catch {}
-    // Dev fallback: build from source if Go is available and source exists.
+    try { await fs.promises.unlink(tmp); } catch {}
     const hasSource = fs.existsSync(path.join(PKG_ROOT, 'go.mod')) && fs.existsSync(path.join(PKG_ROOT, 'main.go'));
     if (hasSource) {
       const r = spawnSync('go', ['build', '-o', bin, '.'], { cwd: PKG_ROOT, stdio: 'inherit' });
       if (r.status === 0 && fs.existsSync(bin)) return bin;
     }
-    const msg = `croctui binary not found.\nTried: ${bin}\nDownload: ${url}\n${e.message}\n` +
-      `Fix: wait for GitHub Release ${tag} with asset ${asset}, or run with Go: go run .`;
-    throw new Error(msg);
+    throw new Error(
+      `croctui binary not found.\nTried: ${bin}\nDownload: ${url}\n${e.message}\n` +
+      `Fix: npx will download ${asset} from ${tag} — check release exists, or run with Go: go run .`
+    );
   }
 }
 
 async function main() {
   let bin;
-  try {
-    bin = await ensureBin();
-  } catch (e) {
-    console.error(e.message);
-    process.exit(1);
-  }
+  try { bin = await ensureBin(); } catch (e) { console.error(e.message); process.exit(1); }
   const res = spawnSync(bin, process.argv.slice(2), { stdio: 'inherit' });
   process.exit(res.status === null ? 1 : res.status);
 }
-
 main();

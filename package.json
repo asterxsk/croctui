@@ -1,6 +1,6 @@
 {
   "name": "@asterxsk/croctui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Croc TUI — peer-to-peer file transfer, keyboard-driven (Go + Bubble Tea)",
   "license": "MIT",
   "author": "asterxsk",
@@ -10,7 +10,13 @@
   },
   "homepage": "https://github.com/asterxsk/croctui#readme",
   "bugs": "https://github.com/asterxsk/croctui/issues",
-  "keywords": ["croc", "tui", "bubble-tea", "file-transfer", "p2p"],
+  "keywords": [
+    "croc",
+    "tui",
+    "bubble-tea",
+    "file-transfer",
+    "p2p"
+  ],
   "bin": {
     "croctui": "bin/croctui.js",
     "crocgui": "bin/croctui.js"
