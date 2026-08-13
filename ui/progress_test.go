@@ -7,7 +7,10 @@ import (
 )
 
 func TestFormatSize(t *testing.T) {
-	cases := []struct{ in int64; want string }{
+	cases := []struct {
+		in   int64
+		want string
+	}{
 		{0, "0 B"},
 		{12, "12 B"},
 		{1024, "1.0 KB"},

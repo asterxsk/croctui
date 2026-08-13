@@ -1,0 +1,458 @@
+{
+  "communities": {
+    "0": [
+      "croc_install",
+      "croc_install_install",
+      "go_type_context_cancelfunc",
+      "go_type_context_context",
+      "go_type_github_com_charmbracelet_bubbles_progress_model",
+      "go_type_github_com_charmbracelet_bubbles_spinner_model",
+      "go_type_github_com_charmbracelet_bubbles_textinput_model",
+      "go_type_github_com_charmbracelet_bubbletea_cmd",
+      "go_type_github_com_charmbracelet_bubbletea_model",
+      "go_type_github_com_charmbracelet_bubbletea_msg",
+      "go_type_github_com_charmbracelet_bubbletea_program",
+      "ui_historymodel_update",
+      "ui_installmodel",
+      "ui_installmodel_init",
+      "ui_installmodel_update",
+      "ui_installmodel_view",
+      "ui_receivemodel",
+      "ui_receivemodel_init",
+      "ui_receivemodel_startreceive",
+      "ui_receivemodel_update",
+      "ui_rootmodel",
+      "ui_rootmodel_init",
+      "ui_rootmodel_setprogram",
+      "ui_rootmodel_setsize",
+      "ui_rootmodel_update",
+      "ui_rootmodel_view",
+      "ui_runner_runcroc",
+      "ui_runner_runcroccontext",
+      "ui_runnertestmodel",
+      "ui_runnertestmodel_init",
+      "ui_runnertestmodel_update",
+      "ui_runnertestmodel_view",
+      "ui_send",
+      "ui_sendfilespickedmsg",
+      "ui_sendmodel",
+      "ui_sendmodel_init",
+      "ui_sendmodel_sendfiles",
+      "ui_sendmodel_update",
+      "ui_sendstate",
+      "ui_welcome",
+      "ui_welcome_updatewelcome",
+      "ui_welcome_welcomepulsetick",
+      "ui_welcomemodel",
+      "ui_welcomemodel_init",
+      "ui_welcomemodel_update",
+      "ui_welcomepulsemsg"
+    ],
+    "1": [
+      "go_type_testing_t",
+      "ui_progress_scale_test",
+      "ui_progress_scale_test_testprogressscale",
+      "ui_send_fix_test",
+      "ui_send_fix_test_testsendcodevisibleduringtransfer",
+      "ui_send_fix_test_testsendconfirmescgoesback",
+      "ui_send_fix_test_testsendconfirmxremoveslastfile",
+      "ui_send_fix_test_testsenddoneenterstartsnewsend",
+      "ui_send_newsendmodel",
+      "ui_send_test",
+      "ui_send_test_testsendaddmoreappends",
+      "ui_send_test_testsendaddmorecancelkeepslist",
+      "ui_send_test_testsendaddmorededupes",
+      "ui_send_test_testsendaopensdialog",
+      "ui_send_test_testsendconfirmsfiles",
+      "ui_send_test_testsenddeletekeepscursorinrange",
+      "ui_send_test_testsenddirshowsfoldernotsize",
+      "ui_send_test_testsendemptyenteropensdialog",
+      "ui_send_test_testsendenteralwaysopensdialog",
+      "ui_send_test_testsendinitdoesnotopendialog",
+      "ui_send_test_testsendnavigateanddelete",
+      "ui_send_test_testsendshiftaopensfolderdialog",
+      "ui_send_test_testsendspaceemptynoop",
+      "ui_send_test_testsendspacesends",
+      "ui_send_test_testsendviewemptyshowsaddhint",
+      "ui_send_test_testsendviewlistsfiles",
+      "ui_send_test_testsendwaitingescgoesback",
+      "ui_welcome_test",
+      "ui_welcome_test_testwelcomeentersendsgohistory",
+      "ui_welcome_test_testwelcomeentersendsgoreceive",
+      "ui_welcome_test_testwelcomeentersendsgosend",
+      "ui_welcome_test_testwelcomepulseticks",
+      "ui_welcome_test_testwelcomeselectedbuttonanimated",
+      "ui_welcome_test_testwelcomeviewshowsactions",
+      "ui_welcome_test_testwelcomeviewshowstransfercaption"
+    ],
+    "2": [
+      "ui_frame_test",
+      "ui_frame_test_stripansi",
+      "ui_frame_test_testallscreensshowlogoandfitwindow",
+      "ui_frame_test_testframecentersvertically",
+      "ui_frame_test_testframefillswidth",
+      "ui_frame_test_testframenohiddenextraheight",
+      "ui_frame_test_testframezerowidthpipesthrough",
+      "ui_frame_test_testscreenviewfitswindow",
+      "ui_frame_test_testscreenviewrenderslogoheader",
+      "ui_frame_test_testwelcomecontainscrocwordmark",
+      "ui_frame_test_width",
+      "ui_progress",
+      "ui_progress_downloadsdir",
+      "ui_progress_formatsize",
+      "ui_progress_test",
+      "ui_progress_test_testdownloadsdir",
+      "ui_progress_test_testformatsize",
+      "ui_receivemodel_view",
+      "ui_sendmodel_sendlist",
+      "ui_sendmodel_view",
+      "ui_theme",
+      "ui_theme_crocheader",
+      "ui_theme_footerline",
+      "ui_theme_footerpad",
+      "ui_theme_frame",
+      "ui_theme_screenview",
+      "ui_theme_separatorline",
+      "ui_welcome_welcomebutton",
+      "ui_welcomemodel_view"
+    ],
+    "3": [
+      "croc_event",
+      "croc_eventhistory",
+      "croc_eventhistory_addevent",
+      "croc_eventhistory_addrelationship",
+      "croc_eventkind",
+      "croc_eventmetadata",
+      "croc_parse",
+      "croc_parse_go_croc_eventwithmeta",
+      "croc_parse_neweventhistory",
+      "croc_parse_parsechunk",
+      "croc_parse_parseline",
+      "croc_parse_test",
+      "croc_parse_test_testparsechunkdropsblanks",
+      "croc_parse_test_testparsechunkrealprobeoutput",
+      "croc_parse_test_testparsecode",
+      "croc_parse_test_testparseerror",
+      "croc_parse_test_testparseerrorkeywords",
+      "croc_parse_test_testparsefile",
+      "croc_parse_test_testparseprogress",
+      "croc_parse_test_testparseprogresswithfailednoterror",
+      "croc_parse_test_testparsereceivingfile",
+      "croc_parse_test_testparseunknownisstatus",
+      "croc_parse_transfergraph",
+      "croc_relationship",
+      "croc_sourcelocation"
+    ],
+    "4": [
+      "package",
+      "package_bin",
+      "package_bin_crocgui",
+      "package_description",
+      "package_engines",
+      "package_engines_node",
+      "package_files",
+      "package_license",
+      "package_name",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_postinstall",
+      "package_version",
+      "ref_bin",
+      "ref_croc",
+      "ref_dialog",
+      "ref_go_mod",
+      "ref_go_sum",
+      "ref_main_go",
+      "ref_ui"
+    ],
+    "5": [
+      "ui_histdir",
+      "ui_histdir_string",
+      "ui_history",
+      "ui_history_itoa",
+      "ui_history_joinlines",
+      "ui_history_newhistorymodel",
+      "ui_history_test",
+      "ui_history_test_testhistoryemptystate",
+      "ui_history_test_testhistoryescgoesback",
+      "ui_history_test_testhistoryrecordsentry",
+      "ui_history_test_testhistoryrecordsmultipleandnavigates",
+      "ui_history_test_testhistoryshowserrorstatus",
+      "ui_historyentry",
+      "ui_historymodel",
+      "ui_historymodel_add",
+      "ui_historymodel_init",
+      "ui_historymodel_view"
+    ],
+    "6": [
+      "dialog_dialog",
+      "dialog_dialog_dialogscript",
+      "dialog_dialog_folderscript",
+      "dialog_dialog_manual_test",
+      "dialog_dialog_manual_test_testmanualpick",
+      "dialog_dialog_parsepaths",
+      "dialog_dialog_pickfiles",
+      "dialog_dialog_pickfolder",
+      "dialog_dialog_test",
+      "dialog_dialog_test_testfolderscriptopensatcwd",
+      "dialog_dialog_test_testfolderscriptusesfolderbrowser",
+      "dialog_dialog_test_testparsepaths",
+      "dialog_dialog_test_testscriptenablesmultiselect",
+      "dialog_dialog_test_testscriptopensatcwd",
+      "dialog_dialog_test_testscriptsetsutf8encoding"
+    ],
+    "7": [
+      "croc_parse_test_testreceiveargs",
+      "croc_parse_test_testsendargs",
+      "croc_runner",
+      "croc_runner_detect",
+      "croc_runner_receiveargs",
+      "croc_runner_sendargs",
+      "main",
+      "main_main",
+      "ui_root_new",
+      "ui_root_test",
+      "ui_root_test_testrootstartsendwithoutprogramshowserror",
+      "ui_root_test_testscreenswitchkeepssize"
+    ],
+    "8": [
+      "ui_receive",
+      "ui_receive_newreceivemodel",
+      "ui_receive_test",
+      "ui_receive_test_contains",
+      "ui_receive_test_findsubstring",
+      "ui_receive_test_testreceivecodetooshort",
+      "ui_receive_test_testreceiveenteremitsstartreceive",
+      "ui_receive_test_testreceiveerrorprecedence",
+      "ui_recvstate",
+      "ui_startreceivemsg",
+      "ui_testerror",
+      "ui_testerror_error"
+    ],
+    "9": [
+      "ui_install",
+      "ui_install_installprogresstick",
+      "ui_install_newinstallmodel",
+      "ui_install_test",
+      "ui_install_test_testinstalldoneonlyadvancesonenter",
+      "ui_install_test_testinstallenterrunsinstall",
+      "ui_install_test_testinstallviewpromptsforwinget",
+      "ui_installfinishedmsg",
+      "ui_installstartedmsg",
+      "ui_installstate",
+      "ui_installtickmsg"
+    ],
+    "10": [
+      "bin_crocgui",
+      "bin_crocgui_bin",
+      "bin_crocgui_build",
+      "bin_crocgui_fs",
+      "bin_crocgui_needsbuild",
+      "bin_crocgui_path",
+      "bin_crocgui_pkg_root",
+      "bin_crocgui_res",
+      "bin_crocgui_spawnsync"
+    ],
+    "11": [
+      "go_type_io_reader",
+      "go_type_os_exec_cmd",
+      "ui_croceventmsg",
+      "ui_crocfinishedmsg",
+      "ui_runner",
+      "ui_runner_buildcroccmd",
+      "ui_runner_streamoutput",
+      "ui_runner_test",
+      "ui_runner_test_testbuildcroccmd"
+    ],
+    "12": [
+      "ui_dialogfailedmsg",
+      "ui_goscreenmsg",
+      "ui_root",
+      "ui_root_errstr",
+      "ui_root_nowstamp",
+      "ui_rootmodel_recordrecv",
+      "ui_rootmodel_recordsend",
+      "ui_screen",
+      "ui_startsendmsg"
+    ],
+    "13": [
+      "ui_runner_integration_test",
+      "ui_runner_integration_test_buildfakecroc",
+      "ui_runner_integration_test_exesuffix",
+      "ui_runner_integration_test_runcrocinprogram",
+      "ui_runner_integration_test_testruncrocnonblocking",
+      "ui_runner_integration_test_testruncrocstreamscodeandfile"
+    ],
+    "14": [
+      "ui_fake_croc",
+      "ui_fake_croc_main"
+    ],
+    "15": [
+      "pkg_crocgui"
+    ]
+  },
+  "cohesion": {
+    "0": 0.08888888888888889,
+    "1": 0.13445378151260504,
+    "2": 0.11083743842364532,
+    "3": 0.15666666666666668,
+    "4": 0.1,
+    "5": 0.19117647058823528,
+    "6": 0.21904761904761905,
+    "7": 0.18181818181818182,
+    "8": 0.22727272727272727,
+    "9": 0.21818181818181817,
+    "10": 0.2222222222222222,
+    "11": 0.2222222222222222,
+    "12": 0.3055555555555556,
+    "13": 0.7333333333333333,
+    "14": 1.0,
+    "15": 1.0
+  },
+  "gods": [
+    {
+      "id": "ui_send_newsendmodel",
+      "label": "newSendModel()",
+      "degree": 26
+    },
+    {
+      "id": "ui_rootmodel",
+      "label": "RootModel",
+      "degree": 16
+    },
+    {
+      "id": "croc_parse_parseline",
+      "label": "ParseLine()",
+      "degree": 12
+    },
+    {
+      "id": "ui_receivemodel",
+      "label": "receiveModel",
+      "degree": 11
+    },
+    {
+      "id": "ui_sendmodel",
+      "label": "sendModel",
+      "degree": 11
+    },
+    {
+      "id": "ui_theme_screenview",
+      "label": "screenView()",
+      "degree": 10
+    },
+    {
+      "id": "ui_installmodel",
+      "label": "installModel",
+      "degree": 9
+    },
+    {
+      "id": "croc_parse_go_croc_eventwithmeta",
+      "label": "EventWithMeta",
+      "degree": 9
+    },
+    {
+      "id": "package_files",
+      "label": "files",
+      "degree": 8
+    },
+    {
+      "id": "ui_history_newhistorymodel",
+      "label": "newHistoryModel()",
+      "degree": 8
+    }
+  ],
+  "surprises": [
+    {
+      "source": "crocEventMsg",
+      "target": "EventWithMeta",
+      "source_files": [
+        "ui/runner.go",
+        "croc/parse.go"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `crocEventMsg` unexpectedly reaches hub `EventWithMeta`"
+    },
+    {
+      "source": "streamOutput()",
+      "target": "ParseLine()",
+      "source_files": [
+        "ui/runner.go",
+        "croc/parse.go"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities"
+    },
+    {
+      "source": "TestProgressScale()",
+      "target": "newReceiveModel()",
+      "source_files": [
+        "ui/progress_scale_test.go",
+        "ui/receive.go"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "TestAllScreensShowLogoAndFitWindow()",
+      "target": "newSendModel()",
+      "source_files": [
+        "ui/frame_test.go",
+        "ui/send.go"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    },
+    {
+      "source": "TestSendDirShowsFolderNotSize()",
+      "target": "stripANSI()",
+      "source_files": [
+        "ui/send_test.go",
+        "ui/frame_test.go"
+      ],
+      "confidence": "INFERRED",
+      "relation": "calls",
+      "why": "inferred connection - not explicitly stated in source; bridges separate communities"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `RootModel` connect `github.com/charmbracelet/bubbletea.Cmd` to `root.go`, `newHistoryModel`?",
+      "why": "High betweenness centrality (0.084) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `newSendModel()` connect `testing.T` to `github.com/charmbracelet/bubbletea.Cmd`, `frame_test.go`?",
+      "why": "High betweenness centrality (0.079) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `ParseLine()` connect `ParseLine` to `ui/runner.go`?",
+      "why": "High betweenness centrality (0.077) - this node is a cross-community bridge."
+    },
+    {
+      "type": "verify_inferred",
+      "question": "Are the 24 inferred relationships involving `newSendModel()` (e.g. with `TestAllScreensShowLogoAndFitWindow()` and `TestProgressScale()`) actually correct?",
+      "why": "`newSendModel()` has 24 INFERRED edges - model-reasoned connections that need verification."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `sendFilesPickedMsg`, `welcomePulseMsg`, `BIN` to the rest of the system?",
+      "why": "32 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `github.com/charmbracelet/bubbletea.Cmd` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.08888888888888889 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `testing.T` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.13445378151260504 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

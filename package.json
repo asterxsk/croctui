@@ -1,25 +1,33 @@
 {
-  "name": "crocgui",
+  "name": "@asterxsk/croctui",
   "version": "0.1.0",
-  "description": "A lightweight terminal GUI for the croc file-transfer CLI (Go + Bubble Tea)",
+  "description": "Croc TUI — peer-to-peer file transfer, keyboard-driven (Go + Bubble Tea)",
   "license": "MIT",
-  "bin": {
-    "crocgui": "bin/crocgui.js"
+  "author": "asterxsk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asterxsk/croctui.git"
   },
-  "scripts": {
-    "build": "go build -o bin/crocgui.exe .",
-    "postinstall": "go build -o bin/crocgui.exe ."
+  "homepage": "https://github.com/asterxsk/croctui#readme",
+  "bugs": "https://github.com/asterxsk/croctui/issues",
+  "keywords": ["croc", "tui", "bubble-tea", "file-transfer", "p2p"],
+  "bin": {
+    "croctui": "bin/croctui.js",
+    "crocgui": "bin/croctui.js"
   },
   "files": [
-    "bin/",
-    "main.go",
-    "go.mod",
-    "go.sum",
-    "croc/",
-    "ui/",
-    "dialog/"
+    "bin/croctui.js",
+    "bin/install.js",
+    "README.md"
   ],
+  "scripts": {
+    "build": "go build -o bin/croctui-windows-amd64.exe .",
+    "postinstall": "node bin/install.js"
+  },
   "engines": {
     "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
